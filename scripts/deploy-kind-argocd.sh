@@ -145,10 +145,28 @@ wait_for_deployment() {
   timeout 300s bash -c "until kubectl get deployment/${deployment} -n ${namespace} >/dev/null 2>&1; do sleep 3; done"
 }
 
+wait_for_deployment_image() {
+  local namespace="$1"
+  local deployment="$2"
+  local tag="$3"
+
+  timeout 300s bash -c "
+    while true; do
+      image=\$(kubectl get deployment/${deployment} -n ${namespace} -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || true)
+      case \"\$image\" in
+        *:\"${tag}\") exit 0 ;;
+      esac
+      sleep 3
+    done
+  "
+}
+
 echo "Waiting for app rollout..."
 wait_for_namespace demo
 wait_for_deployment demo backend
 wait_for_deployment demo frontend
+wait_for_deployment_image demo backend "$IMAGE_TAG"
+wait_for_deployment_image demo frontend "$IMAGE_TAG"
 kubectl rollout status deployment/backend -n demo --timeout=300s
 kubectl rollout status deployment/frontend -n demo --timeout=300s
 
