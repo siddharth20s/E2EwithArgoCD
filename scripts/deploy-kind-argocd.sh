@@ -49,9 +49,29 @@ docker build -t "demo-backend:$IMAGE_TAG" ./backend
 echo "Building frontend image..."
 docker build -t "demo-frontend:$IMAGE_TAG" ./frontend
 
+load_image_into_kind() {
+  local image="$1"
+
+  if kind load docker-image "$image" --name kind; then
+    return 0
+  fi
+
+  echo "kind load failed for $image, falling back to direct containerd import..."
+  local archive
+  archive="$(mktemp "${TMPDIR:-/tmp}/kind-image-XXXXXX.tar")"
+  docker save "$image" -o "$archive"
+
+  while IFS= read -r node; do
+    echo "Importing $image into node $node"
+    docker exec -i "$node" ctr -n k8s.io images import - < "$archive"
+  done < <(kind get nodes --name kind)
+
+  rm -f "$archive"
+}
+
 echo "Loading images into kind cluster 'kind'..."
-kind load docker-image "demo-backend:$IMAGE_TAG" --name kind
-kind load docker-image "demo-frontend:$IMAGE_TAG" --name kind
+load_image_into_kind "demo-backend:$IMAGE_TAG"
+load_image_into_kind "demo-frontend:$IMAGE_TAG"
 
 echo "Ensuring Argo CD namespace exists..."
 kubectl get namespace argocd >/dev/null 2>&1 || kubectl create namespace argocd
