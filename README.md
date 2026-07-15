@@ -9,7 +9,7 @@ This repository is configured for a local, zero-cost GitOps flow.
 - helm/demo-e2e: Helm chart for backend, frontend, and postgres
 - helm/demo-e2e/values-kind.yaml: local kind deployment values
 - Jenkinsfile: Jenkins pipeline
-- scripts/deploy-kind-argocd.ps1: deploy helper used by Jenkins
+- scripts/deploy-kind-argocd.sh: deploy helper used by Jenkins (Linux shell)
 
 ## Flow
 
@@ -17,7 +17,7 @@ This repository is configured for a local, zero-cost GitOps flow.
 2. Jenkins webhook triggers a pipeline run.
 3. Jenkins builds backend and frontend, validates Helm.
 4. Jenkins creates an image tag from commit and build number.
-5. Jenkins runs scripts/deploy-kind-argocd.ps1 with that tag.
+5. Jenkins runs scripts/deploy-kind-argocd.sh with that tag.
 6. Script updates helm/demo-e2e/values-kind.yaml, builds images, loads images into kind, and ensures Argo CD app exists.
 7. Jenkins commits the values file change to main.
 8. Argo CD detects the Git change and syncs to kind.
@@ -33,6 +33,7 @@ This repository is configured for a local, zero-cost GitOps flow.
    - kubectl
    - helm
    - git
+   - bash
 
 2. Create the local kind cluster:
 

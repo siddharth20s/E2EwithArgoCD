@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   environment {
-    REPO_URL = 'https://github.com/REPLACE_WITH_YOUR_REPO.git'
+    REPO_URL = 'https://github.com/siddharth20s/E2EwithArgoCD.git'
   }
 
   options {
@@ -12,59 +12,63 @@ pipeline {
   stages {
     stage('Validate Pipeline Config') {
       steps {
-        powershell '''
-          if ($env:REPO_URL -eq 'https://github.com/REPLACE_WITH_YOUR_REPO.git') {
-            throw 'Set REPO_URL in Jenkinsfile to your real repository URL before running deploy.'
-          }
+        sh '''
+          set -e
+          if [ "$REPO_URL" = "https://github.com/REPLACE_WITH_YOUR_REPO.git" ]; then
+            echo "Set REPO_URL in Jenkinsfile to your real repository URL before running deploy."
+            exit 1
+          fi
         '''
       }
     }
 
     stage('Backend Build') {
       steps {
-        powershell 'dotnet restore backend/Backend.Api/Backend.Api.csproj'
-        powershell 'dotnet build backend/Backend.Api/Backend.Api.csproj -c Release --no-restore'
+        sh 'dotnet restore backend/Backend.Api/Backend.Api.csproj'
+        sh 'dotnet build backend/Backend.Api/Backend.Api.csproj -c Release --no-restore'
       }
     }
 
     stage('Frontend Build') {
       steps {
         dir('frontend') {
-          powershell 'npm ci'
-          powershell 'npm run build'
+          sh 'npm ci'
+          sh 'npm run build'
         }
       }
     }
 
     stage('Helm Validate') {
       steps {
-        powershell 'helm lint helm/demo-e2e'
-        powershell 'helm template demo-stack helm/demo-e2e -f helm/demo-e2e/values-kind.yaml > $null'
+        sh 'helm lint helm/demo-e2e'
+        sh 'helm template demo-stack helm/demo-e2e -f helm/demo-e2e/values-kind.yaml >/dev/null'
       }
     }
 
     stage('Deploy to kind with Argo CD') {
       when {
-        branch 'main'
+        expression {
+          return env.BRANCH_NAME == null || env.BRANCH_NAME == 'main'
+        }
       }
       steps {
-        powershell '''
-          $shortSha = (git rev-parse --short HEAD).Trim()
-          $imageTag = "$shortSha-$env:BUILD_NUMBER"
+        sh '''
+          set -e
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          IMAGE_TAG="${SHORT_SHA}-${BUILD_NUMBER}"
 
-          .\\scripts\\deploy-kind-argocd.ps1 -ImageTag $imageTag -RepoUrl $env:REPO_URL
+          bash ./scripts/deploy-kind-argocd.sh "$IMAGE_TAG" "$REPO_URL"
 
           git config user.email "jenkins@local"
           git config user.name "jenkins"
 
           git add helm/demo-e2e/values-kind.yaml
-          git diff --cached --quiet
-          if ($LASTEXITCODE -ne 0) {
-            git commit -m "gitops: promote local kind images to $imageTag"
+          if ! git diff --cached --quiet; then
+            git commit -m "gitops: promote local kind images to ${IMAGE_TAG}"
             git push origin HEAD:main
-          } else {
-            Write-Host "No GitOps values change detected; skipping commit."
-          }
+          else
+            echo "No GitOps values change detected; skipping commit."
+          fi
         '''
       }
     }
