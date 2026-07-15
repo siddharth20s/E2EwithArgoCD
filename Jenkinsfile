@@ -5,10 +5,6 @@ pipeline {
     REPO_URL = 'https://github.com/siddharth20s/E2EwithArgoCD.git'
   }
 
-  options {
-    timestamps()
-  }
-
   stages {
     stage('Validate Pipeline Config') {
       steps {
