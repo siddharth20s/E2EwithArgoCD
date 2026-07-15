@@ -52,7 +52,11 @@ docker build -t "demo-frontend:$IMAGE_TAG" ./frontend
 load_image_into_kind() {
   local image="$1"
 
-  if kind load docker-image "$image" --name kind; then
+  if command -v timeout >/dev/null 2>&1; then
+    if timeout 45s kind load docker-image "$image" --name kind; then
+      return 0
+    fi
+  elif kind load docker-image "$image" --name kind; then
     return 0
   fi
 
