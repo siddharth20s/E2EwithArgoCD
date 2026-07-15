@@ -129,7 +129,21 @@ spec:
       - CreateNamespace=true
 EOF
 
+wait_for_namespace() {
+  local namespace="$1"
+  timeout 180s bash -c "until kubectl get namespace ${namespace} >/dev/null 2>&1; do sleep 3; done"
+}
+
+wait_for_deployment() {
+  local namespace="$1"
+  local deployment="$2"
+  timeout 300s bash -c "until kubectl get deployment/${deployment} -n ${namespace} >/dev/null 2>&1; do sleep 3; done"
+}
+
 echo "Waiting for app rollout..."
+wait_for_namespace demo
+wait_for_deployment demo backend
+wait_for_deployment demo frontend
 kubectl rollout status deployment/backend -n demo --timeout=300s
 kubectl rollout status deployment/frontend -n demo --timeout=300s
 
