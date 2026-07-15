@@ -95,7 +95,7 @@ echo "Ensuring Argo CD namespace exists..."
 kubectl get namespace argocd >/dev/null 2>&1 || kubectl create namespace argocd
 
 echo "Installing or updating Argo CD..."
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply --server-side --force-conflicts -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl rollout status deployment/argocd-server -n argocd --timeout=300s
 
 echo "Applying Argo CD app for local kind..."
