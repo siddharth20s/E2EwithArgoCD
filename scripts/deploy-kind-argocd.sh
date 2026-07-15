@@ -76,10 +76,12 @@ load_image_into_kind "demo-frontend:$IMAGE_TAG"
 configure_kind_kubeconfig() {
   local kubeconfig_tmp
   kubeconfig_tmp="$(mktemp "${TMPDIR:-/tmp}/kind-kubeconfig-XXXXXX")"
-  kind get kubeconfig --name kind > "$kubeconfig_tmp"
 
-  # Jenkins runs in a container; host loopback from kubeconfig is not reachable there.
-  sed -E -i 's#server: https://(127\.0\.0\.1|localhost):#server: https://host.docker.internal:#' "$kubeconfig_tmp"
+  # Ensure Jenkins container can reach kind-control-plane on the kind network.
+  docker network connect kind "$HOSTNAME" >/dev/null 2>&1 || true
+
+  # Use internal endpoint (kind-control-plane:6443) so TLS SANs match.
+  kind get kubeconfig --name kind --internal > "$kubeconfig_tmp"
 
   export KUBECONFIG="$kubeconfig_tmp"
   echo "Configured KUBECONFIG for kind: $KUBECONFIG"
