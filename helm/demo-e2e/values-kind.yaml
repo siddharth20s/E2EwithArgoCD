@@ -1,0 +1,45 @@
+namespaceOverride: ""
+
+imagePullSecrets: []
+
+frontend:
+  replicaCount: 1
+  image:
+    repository: demo-frontend
+    tag: dev
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+
+backend:
+  replicaCount: 1
+  image:
+    repository: demo-backend
+    tag: dev
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8080
+  env:
+    aspnetcoreEnvironment: Production
+
+postgres:
+  image:
+    repository: postgres
+    tag: "16"
+    pullPolicy: IfNotPresent
+  service:
+    port: 5432
+  auth:
+    username: appuser
+    password: apppassword
+    database: appdb
+  storage:
+    enabled: true
+    size: 1Gi
+
+ingress:
+  enabled: true
+  className: nginx
+  host: demo.local
