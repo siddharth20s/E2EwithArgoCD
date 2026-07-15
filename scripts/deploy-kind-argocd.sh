@@ -118,6 +118,11 @@ spec:
     helm:
       valueFiles:
         - values-kind.yaml
+      parameters:
+        - name: backend.image.tag
+          value: "$IMAGE_TAG"
+        - name: frontend.image.tag
+          value: "$IMAGE_TAG"
   destination:
     server: https://kubernetes.default.svc
     namespace: demo

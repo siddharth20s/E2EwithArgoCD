@@ -53,20 +53,6 @@ pipeline {
           SHORT_SHA=$(git rev-parse --short HEAD)
           IMAGE_TAG="${SHORT_SHA}-${BUILD_NUMBER}"
 
-          sed -i -E "/backend:/,/pullPolicy:/ s/tag:.*/tag: ${IMAGE_TAG}/" helm/demo-e2e/values-kind.yaml
-          sed -i -E "/frontend:/,/pullPolicy:/ s/tag:.*/tag: ${IMAGE_TAG}/" helm/demo-e2e/values-kind.yaml
-
-          git config user.email "jenkins@local"
-          git config user.name "jenkins"
-
-          git add helm/demo-e2e/values-kind.yaml
-          if ! git diff --cached --quiet; then
-            git commit -m "gitops: promote local kind images to ${IMAGE_TAG}"
-            git push origin HEAD:main
-          else
-            echo "No GitOps values change detected; skipping commit."
-          fi
-
           bash ./scripts/deploy-kind-argocd.sh "$IMAGE_TAG" "$REPO_URL"
         '''
       }
