@@ -53,7 +53,8 @@ pipeline {
           SHORT_SHA=$(git rev-parse --short HEAD)
           IMAGE_TAG="${SHORT_SHA}-${BUILD_NUMBER}"
 
-          bash ./scripts/deploy-kind-argocd.sh "$IMAGE_TAG" "$REPO_URL"
+          sed -i -E "/backend:/,/pullPolicy:/ s/tag:.*/tag: ${IMAGE_TAG}/" helm/demo-e2e/values-kind.yaml
+          sed -i -E "/frontend:/,/pullPolicy:/ s/tag:.*/tag: ${IMAGE_TAG}/" helm/demo-e2e/values-kind.yaml
 
           git config user.email "jenkins@local"
           git config user.name "jenkins"
@@ -65,6 +66,8 @@ pipeline {
           else
             echo "No GitOps values change detected; skipping commit."
           fi
+
+          bash ./scripts/deploy-kind-argocd.sh "$IMAGE_TAG" "$REPO_URL"
         '''
       }
     }
