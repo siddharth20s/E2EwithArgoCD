@@ -49,6 +49,52 @@ This repository is configured for a local, zero-cost GitOps flow.
 
 6. Configure a Git webhook to Jenkins so push events trigger builds.
 
+## Custom Jenkins Container (Recommended)
+
+This repo includes a Jenkins image with required tools preinstalled:
+
+- dotnet 8 SDK
+- node and npm
+- docker CLI
+- kind
+- kubectl
+- helm
+- git
+
+Files:
+
+- docker/jenkins/Dockerfile
+- docker/jenkins/plugins.txt
+- docker-compose.jenkins.yml
+
+Start Jenkins:
+
+```powershell
+docker compose -f docker-compose.jenkins.yml up -d --build
+```
+
+Open Jenkins UI:
+
+- http://localhost:8082
+
+If setup wizard appears, get initial admin password:
+
+```powershell
+docker exec jenkins-local cat /var/jenkins_home/secrets/initialAdminPassword
+```
+
+Check tools inside container:
+
+```powershell
+docker exec jenkins-local sh -lc "dotnet --version && node --version && npm --version && kubectl version --client && helm version && kind --version && docker --version"
+```
+
+Stop Jenkins:
+
+```powershell
+docker compose -f docker-compose.jenkins.yml down
+```
+
 ## Run It Yourself
 
 1. Push code to main.
